@@ -20,6 +20,7 @@ An awesome canvas testing project.
 - Collaboration mode : allow multiple users edit same canvas board, real-time update via websocket.
 - text option : color, size, font.
 - Export to download.
+- Unit test.
 
 
 ## Getting start
@@ -41,14 +42,14 @@ An awesome canvas testing project.
     - jQuery : jQuery is one of the most popular javascript libraries, I use to to save time while do select element, add Eventlistener, create new element in DOM. I think it's wasted time to re-write jQuery function by native javascript.
     - socket.io: socket.io is used for handling real-time stuffs, currently I only use it to update images list only. If you don't need it, just add set option `{ disabledRealTimeUpdate : true }` .
 - Add `canvas.js` and `item.js` into your project.
-- Include in `index.html`, example:
+- Import in `index.html`, example:
 
     ```
     <script src="js/item.js"></script>
     <script src="js/canvas.js"></script>
     ```
 
-- In `$(document).ready()`'s callback, trigger `castMagic()` on your `<canvas/>` element.
+- In `$(document).ready`, trigger `castMagic()` on your `<canvas/>` element.
 
     ```
     <!-- html -->
