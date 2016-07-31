@@ -4,6 +4,8 @@
 
 
 function renderImage(url, container) {
+	if (!url) return;
+
 	if (!/^http/.test(url))
 		url = ['images', url].join('/');
 
@@ -18,8 +20,11 @@ function renderImage(url, container) {
 }
 
 function canvasTransform(selector, options) {
-	$.each(selector, function (index, $element) {
-		var ctx = new canvasCtx($element, options);
+	$.each(selector, function (index, element) {
+		if ($(element).prop('nodeName').toLocaleUpperCase() != 'CANVAS')
+			return console.error('Cast magic failed. Selected element is not canvas.');
+
+		var ctx = new canvasCtx(element, options);
 		ctx.bindEvent();
 	});
 }
@@ -33,9 +38,10 @@ function canvasCtx(element, options) {
 		maxHeight: 200,
 		font: 'Arial',
 		fontSize: 30,
-		imgContainer: '.image',
-		uploadForm: '#upload',
-		addText: '#addText'
+		imgContainer: '#imageContainer',
+		uploadForm: '#uploadBtn',
+		addText: '#addTextBtn',
+		disabledRealTimeUpdate: false
 	};
 
 	if (options) {
@@ -190,7 +196,10 @@ canvasCtx.prototype.bindEvent = function () {
 			if (request.readyState === 4) {
 				switch (request.status) {
 					case 200 :
-						console.log('ok');
+						if (self.options.disabledRealTimeUpdate) {
+							var img = JSON.parse(request.response || '[]');
+							renderImage(img.file || null, self.options.imgContainer || '.image');
+						}
 						break;
 					default:
 						console.log('status: ', request.status);
@@ -200,7 +209,7 @@ canvasCtx.prototype.bindEvent = function () {
 		};
 		request.onerror = function (error) {
 			console.error('error:', error);
-		}
+		};
 		request.open("POST", "/uploads");
 		request.send(formData);
 
@@ -229,22 +238,50 @@ canvasCtx.prototype.draw = function () {
 	}
 };
 
+
 (function ($) {
 	$.fn.castMagic = function (options) {
 		canvasTransform(this, options);
 		// start socket
-		var socket = io();
 
-		socket.emit('getImageList', 'hi');
+		if (options.disabledRealTimeUpdate) {
+			var getImage = new XMLHttpRequest();
 
-		socket.on('images', function (msg) {
-			while (msg && msg.length) {
-				renderImage(msg.shift(), options.imgContainer || '.image');
-			}
-		});
+			getImage.onreadystatechange = function () {
+				if (getImage.readyState === XMLHttpRequest.DONE) {
+					switch (getImage.status) {
+						case 200 :
+							var res = JSON.parse(getImage.response || "[]");
+							while (res && res.length) {
+								renderImage(res.shift(), options.imgContainer || '.image');
+							}
+							break;
+						default:
+							console.log('status: ', getImage.status);
+							break;
+					}
+				}
+			};
+			getImage.onerror = function (error) {
+				console.error('error:', error);
+			};
+			getImage.open("GET", "/images");
+			getImage.send(null);
+		} else {
+			// websocket for real-time updates
+			var socket = io();
 
-		socket.on('newImage', function (msg) {
-			renderImage(msg, options.imgContainer || '.image');
-		});
+			socket.emit('getImageList', 'channel01');
+			socket.on('images', function (msg) {
+				while (msg && msg.length) {
+					renderImage(msg.shift(), options.imgContainer || '.image');
+				}
+			});
+			socket.on('newImage', function (msg) {
+				renderImage(msg, options.imgContainer || '.image');
+			});
+		}
+
+
 	};
 })(jQuery);

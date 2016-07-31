@@ -14,7 +14,7 @@ app.use(express.static(__clientDir));
 // define file name and destination to save
 let storage = multer.diskStorage({
 	destination: (req, file, cb) => {
-		cb(null, __dirname + '/images')
+		cb(null, __clientDir + '/images')
 	},
 	filename: (req, file, cb) => {
 		let ext = file.originalname.split('.');
